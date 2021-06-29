@@ -63,7 +63,7 @@ case class TraceEmma(file: String) {
 object cpu1802_Testing_Sim {
     def main(args: Array[String]) {
         SimConfig.withWave.compile{
-            val dut = new CDP1802
+            val dut = new Spinal1802()
             dut.OP.simPublic()
             dut.D.simPublic()
             dut.Dlast.simPublic()
@@ -90,10 +90,10 @@ object cpu1802_Testing_Sim {
             dut.io.Wait_n #= true
             dut.io.Clear_n #= true
 
-            val ram = new Memory(32767)
-            ram.loadBin(0x00000, "verification\\out.bin")
+            val ram = new Memory(255)
+            ram.loadBin(0x00000, "data/blink.bin")
 
-            val trace = new TraceEmma("verification\\out.log")
+            //val trace = new TraceEmma("verification\\out.log")
 
             var c = 0;
             val loop = new Breaks;
@@ -111,20 +111,24 @@ object cpu1802_Testing_Sim {
                         ram.write(dut.io.Addr16.toInt, dut.io.DataOut.toInt.toByte)
                     }
 
-                    if (dut.io.SC.toInt == 0x1 && dut.io.TPB.toBoolean) {
-                        if (dut.Idle.toBoolean) {
-                            println("Hit A IDIE")
-                            println("Verification was successful")
-                            loop.break;
-                        }
-                    }
+                    // if (dut.io.SC.toInt == 0x1 && dut.io.TPB.toBoolean) {
+                    //     if (dut.Idle.toBoolean) {
+                    //         println("Hit A IDIE")
+                    //         println("Verification was successful")
+                    //         loop.break;
+                    //     }
+                    // }
 
-                    if(dut.io.SC.toInt == 0x0 && dut.io.TPA.toBoolean) {
-                        assert(trace.D == dut.D.toInt, "D Issue: " + trace.getLastLine() + ",\ttD:" + trace.D.formatted("%02X") + ",\tD:" + dut.D.toInt.formatted("%02X") + ",\tC:" + c.toString)
-                        val t = trace.cmpAddr(dut.io.Addr16.toInt)
-                        assert(t, "Address Issue: " + trace.getLastLine() + ",\tA:" + dut.io.Addr16.toInt.formatted("%04X") + "\tC:" + c.toString)
-                        c += 1
+                    // if(dut.io.SC.toInt == 0x0 && dut.io.TPA.toBoolean) {
+                    //     assert(trace.D == dut.D.toInt, "D Issue: " + trace.getLastLine() + ",\ttD:" + trace.D.formatted("%02X") + ",\tD:" + dut.D.toInt.formatted("%02X") + ",\tC:" + c.toString)
+                    //     val t = trace.cmpAddr(dut.io.Addr16.toInt)
+                    //     assert(t, "Address Issue: " + trace.getLastLine() + ",\tA:" + dut.io.Addr16.toInt.formatted("%04X") + "\tC:" + c.toString)
+                    // }
+                    c += 1
+                    if(c > 2000){
+                        loop.break;
                     }
+                    
                 }
             }
         }

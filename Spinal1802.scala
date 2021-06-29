@@ -28,7 +28,7 @@ object DRegControlModes extends SpinalEnum {
     val None, BusIn, ALU_OR, ALU_XOR, ALU_AND, ALU_RSH, ALU_LSH, ALU_RSHR, ALU_LSHR, ALU_Add, ALU_AddCarry, ALU_SubD, ALU_SubDBorrow, ALU_SubM, ALU_SubMBorrow  = newElement()
 }
 
-class CDP1802() extends Component {
+class Spinal1802() extends Component {
     val io = new Bundle {
         val Wait_n = in Bool
         val Clear_n = in Bool
@@ -36,7 +36,6 @@ class CDP1802() extends Component {
         val DMA_Out_n = in Bool
         val Interrupt_n = in Bool
         val EF_n = in Bits (4 bit)
-
 
         val Q = out Bool
         val SC = out Bits (2 bit)
@@ -48,6 +47,7 @@ class CDP1802() extends Component {
         val MWR = out Bool
         val Addr = out Bits(8 bit)
         val Addr16 = out Bits(16 bit)
+
         val DataIn = in Bits(8 bit)
         val DataOut = out Bits(8 bit)
     }
@@ -359,8 +359,8 @@ class CDP1802() extends Component {
 
                 when(StateCounter === 7) {
                     switch(I) {
-                        is(0x0) { //Tested
-                            when(N === 0){
+                        is(0x0) {
+                            when(N === 0){ //IDLE
                                 Idle := True
                                 ExeMode := ExecuteModes.LoadNoInc
                                 RegSelMode := RegSelectModes.DMA0
@@ -369,16 +369,16 @@ class CDP1802() extends Component {
                                 RegSelMode := RegSelectModes.NSel
                             }
                         }
-                        is(0x1){ //Tested
+                        is(0x1){ //INCREMENT REG N
                             RegSelMode := RegSelectModes.NSel
                         }
-                        is(0x2){ //Tested
+                        is(0x2){ //DECREMENT REG N
                             RegSelMode := RegSelectModes.NSel
                         }
-                        is(0x3) {
+                        is(0x3) { //SHORT BRANCH'S
                             ExeMode := ExecuteModes.Load
                         }
-                        is(0x4){ //Tested - LOAD ADVANCE
+                        is(0x4){ //LOAD ADVANCE
                             ExeMode := ExecuteModes.Load
                             RegSelMode := RegSelectModes.NSel
                         }
@@ -386,55 +386,55 @@ class CDP1802() extends Component {
                             ExeMode := ExecuteModes.WriteNoInc
                             RegSelMode := RegSelectModes.NSel
                         }
-                        is(0x6){
+                        is(0x6){ //INCREMENT REG X
                             RegSelMode := RegSelectModes.XSel
-                            when(N > 0 && N <= 7){
+                            when(N > 0 && N <= 7){ //OUTPUT N
                                 ExeMode := ExecuteModes.Load
-                            }elsewhen(N >= 9){
+                            }elsewhen(N >= 9){ //INPUT N
                                 ExeMode := ExecuteModes.WriteNoInc
                             }
                         }
                         is(0x7){
-                            when(N === 0x0 || N === 0x1 ||  N === 0x2) {
+                            when(N === 0x0 || N === 0x1 ||  N === 0x2) { //RETURN | DISABLE | LOAD VIA X AND ADVANCE
                                 RegSelMode := RegSelectModes.XSel
                                 ExeMode := ExecuteModes.Load
-                            }elsewhen(N === 0x3){
+                            }elsewhen(N === 0x3){ //STORE VIA X AND DECREMENT
                                 RegSelMode := RegSelectModes.XSel
                                 ExeMode := ExecuteModes.WriteDec
-                            }elsewhen(N === 0x4 || N === 0x5 || N === 0x7) {
+                            }elsewhen(N === 0x4 || N === 0x5 || N === 0x7) { //ADD WITH CARRY | SUBTRACT D WITH BORROW | SUBTRACT MEMORY WITH BORROW
                                 RegSelMode := RegSelectModes.XSel
                                 ExeMode := ExecuteModes.LoadNoInc
-                            }elsewhen(N === 0x8){
+                            }elsewhen(N === 0x8){ //SAVE
                                 RegSelMode := RegSelectModes.XSel
                                 ExeMode := ExecuteModes.WriteNoInc
-                            }elsewhen(N === 0x9){
+                            }elsewhen(N === 0x9){ //PUSH X, P TO STACK
                                 T := Cat(X, P).asUInt
                                 RegSelMode := RegSelectModes.Stack2
                                 ExeMode := ExecuteModes.WriteDec
-                            }elsewhen(N === 0xC || N === 0xD || N === 0xF){
+                            }elsewhen(N === 0xC || N === 0xD || N === 0xF){ //ADD WITH CARRY, IMMEDIATE | SUBTRACT D WITH BORROW, IMMEDIATE | SUBTRACT MEMORY WITH BORROW, IMMEDIATE
                                 ExeMode := ExecuteModes.Load
                             }
                         }
-                        is(0x8){ //Tested
+                        is(0x8){ //GET LOW REG N
                             RegSelMode := RegSelectModes.NSel
                         }
-                        is(0x9){ //Tested
+                        is(0x9){ //GET HIGH REG N
                             RegSelMode := RegSelectModes.NSel
                         }
-                        is(0xA){ //Tested
+                        is(0xA){ //PUT LOW REG N
                             RegSelMode := RegSelectModes.NSel
                         }
-                        is(0xB){ //Tested
+                        is(0xB){ //PUT HIGH REG N
                             RegSelMode := RegSelectModes.NSel
                         }
-                        is(0xC){
+                        is(0xC){ //LONG BRANCH'S
                             ExeMode := ExecuteModes.Load
                         }
-                        is(0xF){
-                            when(N <= 0x5 || N === 0x7){//
+                        is(0xF){ // SHIFT RIGHT | SHIFT LEFT
+                            when(N <= 0x5 || N === 0x7){//OR | EXCLUSIVE OR | AND | LOAD VIA X | ADD | SUBTRACT D | SUBTRACT MEMORY
                                 RegSelMode := RegSelectModes.XSel
                                 ExeMode := ExecuteModes.LoadNoInc
-                            } elsewhen(N >= 0x8 && N <= 0xd || N === 0xF) { //
+                            } elsewhen(N >= 0x8 && N <= 0xD || N === 0xF) { //LOAD IMMEDIATE | OR IMMEDIATE | AND IMMEDIATE | EXCLUSIVE OR IMMEDIATE | ADD IMMEDIATE | SUBTRACT D IMMEDIATE | SUBTRACT MEMORY IMMEDIATE
                                 ExeMode := ExecuteModes.Load
                             }
                         }
@@ -720,6 +720,6 @@ object CDP1802SpinalConfig extends SpinalConfig(
 //Generate the MyTopLevel's Verilog using the above custom configuration.
 object CDP1802Gen {
     def main(args: Array[String]) {
-        CDP1802SpinalConfig.generateVerilog(new CDP1802).printPruned
+        CDP1802SpinalConfig.generateVerilog(new Spinal1802).printPruned
     }
 }
