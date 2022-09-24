@@ -30,21 +30,21 @@ object DRegControlModes extends SpinalEnum {
 
 class Spinal1802() extends Component {
     val io = new Bundle {
-        val Wait_n = in Bool
-        val Clear_n = in Bool
-        val DMA_In_n = in Bool
-        val DMA_Out_n = in Bool
-        val Interrupt_n = in Bool
+        val Wait_n = in Bool()
+        val Clear_n = in Bool()
+        val DMA_In_n = in Bool()
+        val DMA_Out_n = in Bool()
+        val Interrupt_n = in Bool()
         val EF_n = in Bits (4 bit)
 
-        val Q = out Bool
+        val Q = out Bool()
         val SC = out Bits (2 bit)
         val N = out Bits (3 bit)
-        val TPA = out Bool
-        val TPB = out Bool
+        val TPA = out Bool()
+        val TPB = out Bool()
 
-        val MRD = out Bool
-        val MWR = out Bool
+        val MRD = out Bool()
+        val MWR = out Bool()
         val Addr = out Bits(8 bit)
         val Addr16 = out Bits(16 bit)
 
